@@ -1,9 +1,9 @@
-build/hello: CMakeLists.txt test/sim_main.cpp src/d_ff.v lint
+build/hello: CMakeLists.txt test/sim_main.cpp src/full_adder.v lint
 	cmake -S . -B build -GNinja
 	ninja -C build
 
-lint: src/d_ff.v
-	verilator --lint-only -Wall src/d_ff.v
+lint: src/full_adder.v
+	verilator --lint-only -Wall src/full_adder.v
 
 run: build/hello
 	./build/hello

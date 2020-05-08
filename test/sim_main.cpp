@@ -1,39 +1,74 @@
-#include <verilated.h>
-#include "Vd_ff.h"
+#include <verilated_vcd_c.h>
+#include "Vfull_adder.h"
 
 int main(int argc, char** argv, char** env) {
+  Verilated::debug(0);
+
+  Verilated::randReset(2);
+
+  Verilated::traceEverOn(true);
+
+  Verilated::commandArgs(argc, argv);
+
+  Verilated::mkdir("logs");
+
   vluint64_t global_tick = 0;
 
-  Vd_ff* d_ff = new Vd_ff;
+  VerilatedVcdC* tracer = new VerilatedVcdC;
+  Vfull_adder* full_adder = new Vfull_adder;
 
-  d_ff->clk = 0;
-  d_ff->d = 1;
-  d_ff->eval();
+  full_adder->trace(tracer, 99);
+
+  tracer->open("logs/full_adder.vcd");
+
+  full_adder->clk = 0;
+  full_adder->a = 0;
+  full_adder->b = 0;
+  full_adder->c_in = 0;
+  full_adder->eval();
 
   while (!Verilated::gotFinish()) {
     VL_PRINTF(
-      "[%" VL_PRI64 "d] clk=%x d=%x q=%x q_bar=%x\n",
+      "[%" VL_PRI64 "d] clk=%x a=%x b=%x c_in=%x sum=%x c_out=%x\n",
       global_tick,
-      d_ff->clk,
-      d_ff->d,
-      d_ff->q,
-      d_ff->q_bar
+      full_adder->clk,
+      full_adder->a,
+      full_adder->b,
+      full_adder->c_in,
+      full_adder->sum,
+      full_adder->c_out
     );
     sleep(1);
 
     ++global_tick;
 
-    if (global_tick % 10 == 0) {
-      d_ff->d = !d_ff->d;
+    if (global_tick % 3 == 0) {
+      full_adder->c_in = !full_adder->c_in;
+    }
+    if (global_tick % 6 == 0) {
+      full_adder->b = !full_adder->b;
+    }
+    if (global_tick % 12 == 0) {
+      full_adder->a = !full_adder->a;
     }
 
-    d_ff->clk = !d_ff->clk;
-    d_ff->eval();
+    full_adder->clk = !full_adder->clk;
+    full_adder->eval();
+
+    tracer->dump(global_tick);
+    tracer->flush();
   }
 
-  d_ff->final();
+  tracer->close();
 
-  delete d_ff;
+#if VM_COVERAGE
+  Verilated::mkdir("logs");
+  VerilatedCov::write("logs/coverage.dat");
+#endif
+
+  full_adder->final();
+
+  delete full_adder;
 
   return 0;
 }
